@@ -1,5 +1,5 @@
 import type { Route } from "./+types/api.login";
-import { handleLogin } from "../middleware.server";
+import { handleLogin, envConfig } from "../middleware.server";
 
 export async function action({ request }: Route.ActionArgs) {
   try {
@@ -29,13 +29,7 @@ export async function action({ request }: Route.ActionArgs) {
     }
 
     // 環境変数から認証情報を取得
-    const validUsername = process.env.ADMIN_USERNAME || 'neko';
-    const validPassword = process.env.ADMIN_PASSWORD || 'neko';
-    
-    console.log('API Login - Environment variables:');
-    console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME || 'undefined (using default: neko)');
-    console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD || 'undefined (using default: neko)');
-    
+    const { username: validUsername, password: validPassword } = envConfig.credentials;
 
     if (username === validUsername && password === validPassword) {
       // 認証成功 - セッションCookieを作成
@@ -47,7 +41,7 @@ export async function action({ request }: Route.ActionArgs) {
       };
       
       // 環境変数のハッシュを生成（変更検出用）
-      const envHash = btoa(`${validUsername}:${validPassword}`);
+      const envHash = envConfig.envHash;
       
       const sessionData = {
         userId: user.id,

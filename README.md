@@ -46,6 +46,40 @@ npm run dev
 
 Your application will be available at `http://localhost:5173`.
 
+## Testing
+
+このプロジェクトには包括的なテストスイートが含まれています。リグレッション（機能の退行）を防ぐために、変更を行う前にテストを実行することを推奨します。
+
+### テストの実行
+
+```bash
+# すべてのテストを実行
+npm run test:run
+
+# テストをウォッチモードで実行
+npm test
+
+# テストUIを起動
+npm run test:ui
+
+# カバレッジレポート付きでテストを実行
+npm run test:run -- --coverage
+```
+
+### テスト構成
+
+- **環境変数設定テスト** (`tests/envConfig.test.ts`): 環境変数の読み込みとデフォルト値の動作をテスト
+- **認証テスト** (`tests/auth.test.ts`): ログイン機能とセッションCookie生成をテスト
+- **セッション管理テスト** (`tests/session.test.ts`): セッションCookie解析と環境変数変更検出をテスト
+- **統合テスト** (`tests/integration.test.ts`): 認証フロー全体の動作をテスト
+
+### テストカバレッジ
+
+現在のテストカバレッジ：
+- **ミドルウェア**: 80.39% (認証・セッション管理の核心機能)
+- **ブランチカバレッジ**: 95.83% (条件分岐の大部分をカバー)
+- **関数カバレッジ**: 72.72% (主要な関数をカバー)
+
 ## Building for Production
 
 Create a production build:

@@ -9,10 +9,9 @@ type User = {
 };
 
 // セッション管理用のユーティリティ関数
-function createSessionCookie(user: User): string {
+export function createSessionCookie(user: User): string {
   // 環境変数のハッシュを生成（変更検出用）
-  const { username, password } = getEnvCredentials();
-  const envHash = btoa(`${username}:${password}`);
+  const envHash = envConfig.envHash;
   
   const sessionData = {
     userId: user.id,
@@ -28,7 +27,7 @@ function createSessionCookie(user: User): string {
   return `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=${expires.toUTCString()}`;
 }
 
-function parseSessionCookie(cookieHeader: string | null): User | null {
+export function parseSessionCookie(cookieHeader: string | null): User | null {
   if (!cookieHeader) return null;
   
   try {
@@ -59,8 +58,7 @@ function parseSessionCookie(cookieHeader: string | null): User | null {
     }
     
     // 環境変数の変更をチェック（セッション無効化）
-    const { username, password } = getEnvCredentials();
-    const currentEnvHash = btoa(`${username}:${password}`);
+    const currentEnvHash = envConfig.envHash;
     
     // セッション作成時の環境変数ハッシュと現在のハッシュが異なる場合は無効化
     if (sessionData.envHash !== currentEnvHash) {
@@ -80,7 +78,7 @@ function parseSessionCookie(cookieHeader: string | null): User | null {
   }
 }
 
-function clearSessionCookie(): string {
+export function clearSessionCookie(): string {
   return 'session=; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
 }
 // 認証が必要なパスかどうかを判定
@@ -94,11 +92,6 @@ export const authMiddleware: Route.MiddlewareFunction = async ({ request, contex
   const url = new URL(request.url);
   const pathname = url.pathname;
   
-  // 環境変数の読み込み状況を確認
-  console.log('Environment variables:');
-  console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME || 'undefined (using default: neko)');
-  console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD || 'undefined (using default: neko)');
-
   // 保護されたパスでない場合は認証をスキップ
   if (!isProtectedPath(pathname)) {
     return;
@@ -117,26 +110,35 @@ export const authMiddleware: Route.MiddlewareFunction = async ({ request, contex
   context.user = user;
 };
 
-// 環境変数を読み込む関数
-function getEnvCredentials() {
-  const username = process.env.ADMIN_USERNAME;
-  const password = process.env.ADMIN_PASSWORD;
+// 環境変数設定管理
+export const envConfig = {
+  // 認証情報
+  get adminUsername() {
+    return process.env.ADMIN_USERNAME || 'neko';
+  },
   
-  console.log('Environment variables check:');
-  console.log('ADMIN_USERNAME:', username || 'undefined');
-  console.log('ADMIN_PASSWORD:', password || 'undefined');
+  get adminPassword() {
+    return process.env.ADMIN_PASSWORD || 'neko';
+  },
   
-  // 環境変数が設定されていない場合はデフォルト値を使用
-  return {
-    username: username || 'neko',
-    password: password || 'neko'
-  };
-}
+  // 認証情報をまとめて取得
+  get credentials() {
+    return {
+      username: this.adminUsername,
+      password: this.adminPassword
+    };
+  },
+  
+  // 環境変数ハッシュを生成（セッション管理用）
+  get envHash() {
+    return btoa(`${this.adminUsername}:${this.adminPassword}`);
+  }
+};
 
 // ログイン処理用の関数（ログインページから呼び出される）
 export async function handleLogin(username: string, password: string): Promise<{ success: boolean; cookie?: string; error?: string }> {
   // 環境変数から認証情報を取得
-  const { username: validUsername, password: validPassword } = getEnvCredentials();
+  const { username: validUsername, password: validPassword } = envConfig.credentials;
 
 
   // 認証情報を検証
