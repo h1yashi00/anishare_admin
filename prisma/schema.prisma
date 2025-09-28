@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  username           String               @unique
+  bio                String               @default("")
+  twitter            String?
+  youtube            String?
+  link               String?
+  pixiv              String?
+  misskeyIo          String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  authProviders      AuthProvider[]
+  media              Media[]
+  works              Works[]
+  profileMedia       UserProfileMedia[]
+  LikeWork           LikeWork[]
+  BookMarkWork       BookMarkWork[]
+  BookMarkCollection BookMarkCollection[]
+  ProfilePv          ProfilePv[]
+  following          Follow[]             @relation("UserFollowing")
+  followers          Follow[]             @relation("UserFollowers")
+  WorkComment        WorkComment[]
+  Report             Report[]
+  NotificationsTo    Notifications[]      @relation("NotificationsToUser")
+  NotificationsFrom  Notifications[]      @relation("NotificationsFromUser")
+  UploadSetting      UploadSetting[]
+
+  @@map("users")
+}
+
+model UserProfileMediaType {
+  id           Int                @id @default(autoincrement())
+  displayName  String
+  profileMedia UserProfileMedia[]
+
+  @@map("user_profile_media_types")
+}
+
+model UserProfileMedia {
+  userId  Int
+  mediaId Int
+  typeId  Int
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media   Media                @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  type    UserProfileMediaType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, typeId])
+  @@index([userId])
+  @@index([mediaId])
+  @@index([typeId])
+  @@map("user_profile_media")
+}
+
+model AuthProvider {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  provider       String
+  providerUserId String
+  email          String
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@map("auth_providers")
+}
+
+model TempAuthProvider {
+  id        String   @id
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@map("temp_auth_providers")
+}
+
+model Categories {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  WorkCategory WorkCategory[]
+
+  @@map("categories")
+}
+
+model WorkCategory {
+  id         Int        @id @default(autoincrement())
+  categoryId Int
+  workId     Int
+  category   Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  Works      Works      @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, categoryId])
+  @@index([workId])
+  @@index([categoryId])
+  @@map("work_categories")
+}
+
+model WorkStyle {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  works Works[]
+
+  @@map("work_styles")
+}
+
+model Models {
+  id   Int    @id @default(autoincrement())
+  name String
+  url  String @unique @db.VarChar(1000)
+
+  createdAt  DateTime    @default(now())
+  workModels WorkModel[]
+}
+
+model Reference {
+  id   Int    @id @default(autoincrement())
+  name String
+  url  String @unique @db.VarChar(1000)
+
+  createdAt      DateTime        @default(now())
+  workReferences WorkReference[]
+}
+
+model Works {
+  id             Int             @id @default(autoincrement())
+  title          String          @db.VarChar(32)
+  slug           String          @db.Char(14)
+  description    String          @db.VarChar(1000)
+  viewCount      Int             @default(0)
+  styleId        Int
+  timeHour       Int
+  timeMinute     Int
+  userId         Int
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  workOriginals  WorkOriginal[]
+  workTags       WorkTag[]
+  workMedia      WorkMedia[]
+  workModels     WorkModel[]
+  workReferences WorkReference[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  style          WorkStyle       @relation(fields: [styleId], references: [id])
+  workCategories WorkCategory[] // 多対多の関係
+  LikeWork       LikeWork[]
+  BookMarkWork   BookMarkWork[]
+  WorkComment    WorkComment[]
+  Report         Report[]
+  Notification   Notifications[]
+
+  @@unique([slug])
+  @@map("works")
+}
+
+model LikeWork {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+  work      Works    @relation(fields: [workId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, userId])
+  @@index([workId])
+  @@index([userId])
+  @@map("like_works")
+}
+
+model BookMarkWork {
+  id           Int                 @id @default(autoincrement())
+  workId       Int
+  userId       Int
+  createdAt    DateTime            @default(now())
+  collectionId Int?
+  collection   BookMarkCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  work Works @relation(fields: [workId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, userId])
+  @@index([workId])
+  @@index([userId])
+  @@map("book_mark_works")
+}
+
+model ProfilePv {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  createdAt DateTime @default(now())
+  viewCount Int      @default(0)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([userId])
+  @@map("profile_pvs")
+}
+
+model BookMarkCollection {
+  id           Int            @id @default(autoincrement())
+  userId       Int
+  name         String         @default("すべてのブックマーク")
+  createdAt    DateTime       @default(now())
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  BookMarkWork BookMarkWork[]
+
+  @@index([userId])
+  @@map("book_mark_collections")
+}
+
+model WorkModel {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  modelId   Int
+  createdAt DateTime @default(now())
+  work      Works    @relation(fields: [workId], references: [id], onDelete: Cascade)
+  model     Models   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, modelId])
+  @@index([workId])
+  @@index([modelId])
+  @@map("work_models")
+}
+
+model WorkReference {
+  id          Int       @id @default(autoincrement())
+  workId      Int
+  referenceId Int
+  createdAt   DateTime  @default(now())
+  work        Works     @relation(fields: [workId], references: [id], onDelete: Cascade)
+  reference   Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, referenceId])
+  @@index([workId])
+  @@index([referenceId])
+  @@map("work_references")
+}
+
+model Media {
+  id               Int                @id @default(autoincrement())
+  originalFilename String
+  key              String
+  bucketName       String
+  type             String
+  width            Int
+  height           Int
+  mimeType         String
+  frameRate        Float?
+  duration         Int?
+  hashSha256       String
+  pHash            String?
+  moderationFlags  Json?
+  userId           Int
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  workMedia        WorkMedia[]
+  byteSize         Int
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileMedia     UserProfileMedia[]
+
+  @@map("media")
+}
+
+model WorkMedia {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  mediaId   Int
+  type      Int // type 1 original type 2 converted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  work  Works @relation(fields: [workId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, mediaId])
+  @@index([workId])
+  @@index([mediaId])
+  @@map("work_media")
+}
+
+model Original {
+  id            Int            @id @default(autoincrement())
+  title         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  workOriginals WorkOriginal[]
+
+  @@map("originals")
+}
+
+model WorkOriginal {
+  id         Int      @id @default(autoincrement())
+  workId     Int
+  originalId Int
+  createdAt  DateTime @default(now())
+  original   Original @relation(fields: [originalId], references: [id], onDelete: Cascade)
+  work       Works    @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, originalId])
+  @@index([workId])
+  @@index([originalId])
+  @@map("work_originals")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  workTags  WorkTag[]
+
+  @@map("tags")
+}
+
+model WorkTag {
+  id        Int      @id @default(autoincrement())
+  workId    Int
+  tagId     Int
+  createdAt DateTime @default(now())
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  work      Works    @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, tagId])
+  @@index([workId])
+  @@index([tagId])
+  @@map("work_tags")
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  followingId Int
+  createdAt   DateTime @default(now())
+  user        User     @relation("UserFollowing", fields: [userId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, followingId])
+  @@index([userId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model WorkComment {
+  id           Int             @id @default(autoincrement())
+  workId       Int
+  userId       Int
+  parentId     Int?
+  comment      String
+  isHidden     Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  parent       WorkComment?    @relation("WorkCommentParent", fields: [parentId], references: [id], onDelete: Cascade)
+  work         Works           @relation(fields: [workId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children     WorkComment[]   @relation("WorkCommentParent")
+  Report       Report[]
+  Notification Notifications[]
+
+  @@index([workId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("work_comments")
+}
+
+model Report {
+  id        Int          @id @default(autoincrement())
+  userId    Int
+  workId    Int?
+  commentId Int?
+  type      Int          @default(1) // 1: 著作権侵害, 2: 不適切なコンテンツ, 3: 誹謗中傷, 4: その他
+  reason    String       @db.VarChar(3000)
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work      Works?       @relation(fields: [workId], references: [id], onDelete: Cascade)
+  comment   WorkComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workId])
+  @@index([commentId])
+  @@map("reports")
+}
+
+model Notifications {
+  id      Int     @id @default(autoincrement())
+  userId  Int
+  type    Int // 1: いいね 2: コメント 3: フォロー 4: 作品アップロード
+  content String
+  isRead  Boolean @default(false)
+
+  workId    Int?
+  work      Works?       @relation(fields: [workId], references: [id], onDelete: Cascade)
+  commentId Int?
+  comment   WorkComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // 誰からの通知か
+  fromUserId Int
+  fromUser   User @relation("NotificationsFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  user      User     @relation("NotificationsToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, fromUserId]) //  すでに存在するかチェック
+  @@index([userId, createdAt]) // 通知取得
+  @@map("notifications")
+}
+
+model UploadSetting {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  createdAt DateTime @default(now())
+  json      Json     @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("upload_settings")
+}

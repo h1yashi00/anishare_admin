@@ -24,6 +24,18 @@ Install the dependencies:
 npm install
 ```
 
+### Environment Variables
+
+Basic Auth認証を使用するために、以下の環境変数を設定してください：
+
+```bash
+# .env.local ファイルを作成
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_secure_password_here
+```
+
+**注意**: 本番環境では必ず強力なパスワードに変更してください。
+
 ### Development
 
 Start the development server with HMR:
