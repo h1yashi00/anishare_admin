@@ -24,10 +24,8 @@ export default function Index() {
         // ログアウト成功 - ログインページにリダイレクト
         window.location.href = '/login';
       } else {
-        console.error('ログアウトに失敗しました');
       }
     } catch (error) {
-      console.error('ログアウト中にエラーが発生しました:', error);
     } finally {
       setIsLoggingOut(false);
     }

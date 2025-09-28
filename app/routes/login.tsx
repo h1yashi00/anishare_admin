@@ -133,7 +133,7 @@ export default function Login() {
 
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              デフォルト: admin / admin
+              デフォルト: neko / neko
             </p>
           </div>
         </form>

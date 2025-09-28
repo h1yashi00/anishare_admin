@@ -10,11 +10,16 @@ type User = {
 
 // セッション管理用のユーティリティ関数
 function createSessionCookie(user: User): string {
+  // 環境変数のハッシュを生成（変更検出用）
+  const { username, password } = getEnvCredentials();
+  const envHash = btoa(`${username}:${password}`);
+  
   const sessionData = {
     userId: user.id,
     username: user.name,
     email: user.email,
     loginTime: Date.now(),
+    envHash: envHash, // 環境変数のハッシュを保存
   };
   
   const sessionToken = btoa(JSON.stringify(sessionData));
@@ -27,7 +32,6 @@ function parseSessionCookie(cookieHeader: string | null): User | null {
   if (!cookieHeader) return null;
   
   try {
-    console.log('Parsing cookie header:', cookieHeader);
     
     const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=');
@@ -35,29 +39,32 @@ function parseSessionCookie(cookieHeader: string | null): User | null {
       return acc;
     }, {} as Record<string, string>);
     
-    console.log('Parsed cookies:', cookies);
     
     const sessionToken = cookies.session;
     if (!sessionToken) {
-      console.log('No session token found');
       return null;
     }
     
-    console.log('Session token found:', sessionToken);
     
     const sessionData = JSON.parse(atob(sessionToken));
-    console.log('Session data:', sessionData);
     
     // セッションの有効期限をチェック（24時間）
     const now = Date.now();
     const sessionAge = now - sessionData.loginTime;
     const maxAge = 24 * 60 * 60 * 1000; // 24時間
     
-    console.log('Session age check:', { now, loginTime: sessionData.loginTime, sessionAge, maxAge });
     
     if (sessionAge > maxAge) {
-      console.log('Session expired');
       return null; // セッション期限切れ
+    }
+    
+    // 環境変数の変更をチェック（セッション無効化）
+    const { username, password } = getEnvCredentials();
+    const currentEnvHash = btoa(`${username}:${password}`);
+    
+    // セッション作成時の環境変数ハッシュと現在のハッシュが異なる場合は無効化
+    if (sessionData.envHash !== currentEnvHash) {
+      return null; // 環境変数が変更された
     }
     
     const user = {
@@ -67,10 +74,8 @@ function parseSessionCookie(cookieHeader: string | null): User | null {
       avatar: '',
     };
     
-    console.log('Returning user:', user);
     return user;
   } catch (error) {
-    console.error('Error parsing session cookie:', error);
     return null;
   }
 }
@@ -88,6 +93,11 @@ function isProtectedPath(pathname: string): boolean {
 export const authMiddleware: Route.MiddlewareFunction = async ({ request, context }: { request: Request; context: any }) => {
   const url = new URL(request.url);
   const pathname = url.pathname;
+  
+  // 環境変数の読み込み状況を確認
+  console.log('Environment variables:');
+  console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME || 'undefined (using default: neko)');
+  console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD || 'undefined (using default: neko)');
 
   // 保護されたパスでない場合は認証をスキップ
   if (!isProtectedPath(pathname)) {
@@ -107,25 +117,30 @@ export const authMiddleware: Route.MiddlewareFunction = async ({ request, contex
   context.user = user;
 };
 
+// 環境変数を読み込む関数
+function getEnvCredentials() {
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  
+  console.log('Environment variables check:');
+  console.log('ADMIN_USERNAME:', username || 'undefined');
+  console.log('ADMIN_PASSWORD:', password || 'undefined');
+  
+  // 環境変数が設定されていない場合はデフォルト値を使用
+  return {
+    username: username || 'neko',
+    password: password || 'neko'
+  };
+}
+
 // ログイン処理用の関数（ログインページから呼び出される）
 export async function handleLogin(username: string, password: string): Promise<{ success: boolean; cookie?: string; error?: string }> {
   // 環境変数から認証情報を取得
-  const validUsername = process.env.ADMIN_USERNAME || 'admin';
-  const validPassword = process.env.ADMIN_PASSWORD || 'admin';
+  const { username: validUsername, password: validPassword } = getEnvCredentials();
 
-  console.log('handleLogin called with:', { 
-    username, 
-    password: password ? '***' : 'empty',
-    validUsername,
-    validPassword: validPassword ? '***' : 'empty'
-  });
 
   // 認証情報を検証
   if (username !== validUsername || password !== validPassword) {
-    console.log('Authentication failed:', {
-      usernameMatch: username === validUsername,
-      passwordMatch: password === validPassword
-    });
     return { success: false, error: 'invalid_credentials' };
   }
 

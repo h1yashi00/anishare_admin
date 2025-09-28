@@ -20,7 +20,6 @@ export async function action({ request }: Route.ActionArgs) {
       password = formData.get("password") as string || '';
     }
 
-    console.log('Login attempt:', { username, password: password ? '***' : 'empty' });
 
     if (!username || !password) {
       return Response.json(
@@ -29,18 +28,14 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    // 直接認証チェック（テストAPIと同じロジック）
-    const validUsername = 'admin';
-    const validPassword = 'admin';
+    // 環境変数から認証情報を取得
+    const validUsername = process.env.ADMIN_USERNAME || 'neko';
+    const validPassword = process.env.ADMIN_PASSWORD || 'neko';
     
-    console.log('Direct auth check:', {
-      username,
-      password: password ? '***' : 'empty',
-      validUsername,
-      validPassword: validPassword ? '***' : 'empty',
-      usernameMatch: username === validUsername,
-      passwordMatch: password === validPassword
-    });
+    console.log('API Login - Environment variables:');
+    console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME || 'undefined (using default: neko)');
+    console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD || 'undefined (using default: neko)');
+    
 
     if (username === validUsername && password === validPassword) {
       // 認証成功 - セッションCookieを作成
@@ -51,11 +46,15 @@ export async function action({ request }: Route.ActionArgs) {
         avatar: '',
       };
       
+      // 環境変数のハッシュを生成（変更検出用）
+      const envHash = btoa(`${validUsername}:${validPassword}`);
+      
       const sessionData = {
         userId: user.id,
         username: user.name,
         email: user.email,
         loginTime: Date.now(),
+        envHash: envHash, // 環境変数のハッシュを保存
       };
       
       const sessionToken = btoa(JSON.stringify(sessionData));
@@ -78,7 +77,6 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
   } catch (error) {
-    console.error('Login API error:', error);
     return Response.json(
       { success: false, error: "サーバーエラーが発生しました。" },
       { status: 500 }
