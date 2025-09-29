@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import type { Route } from "../+types/root";
 
 export function meta({}: Route.MetaArgs) {
@@ -86,13 +87,19 @@ export default function Home() {
                 </div>
               </div>
               <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <a
-                    href="/works"
-                    className="font-medium text-blue-600 hover:text-blue-500"
+                <div className="text-sm space-y-2">
+                  <Link
+                    to="/works"
+                    className="font-medium text-blue-600 hover:text-blue-500 block"
                   >
                     作品一覧を見る →
-                  </a>
+                  </Link>
+                  <Link
+                    to="/visibility"
+                    className="font-medium text-red-600 hover:text-red-500 block"
+                  >
+                    強制非公開管理 →
+                  </Link>
                 </div>
               </div>
             </div>

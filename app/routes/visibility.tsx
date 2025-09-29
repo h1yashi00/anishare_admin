@@ -1,8 +1,8 @@
-import { redirect, useLoaderData, type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router"
+import { redirect, useLoaderData, Link, type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router"
 import { parseSessionCookie } from "~/middleware.server"
 import { getAdminWorks, forcePrivateWork, restoreWork } from "~/query/query"
 import { useState } from "react"
-import { FaCog, FaEye, FaEyeSlash, FaHeart, FaBookmark, FaComment, FaTags, FaImage } from "react-icons/fa"
+import { FaCog, FaEye, FaEyeSlash, FaHeart, FaBookmark, FaComment, FaTags, FaImage, FaHome } from "react-icons/fa"
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   // Cookieからセッション情報を取得
@@ -42,14 +42,14 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
       await restoreWork(slug)
     }
     
-    return redirect('/admin/works')
+    return redirect('/visibility')
   } catch (error) {
     console.error('Action failed:', error)
-    return redirect('/admin/works')
+    return redirect('/visibility')
   }
 }
 
-export default function AdminWorks() {
+export default function Visibility() {
   const { works } = useLoaderData<typeof loader>()
   const [displaySettings, setDisplaySettings] = useState({
     showStats: true,
@@ -66,7 +66,16 @@ export default function AdminWorks() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">作品管理</h1>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <FaHome />
+            ホーム
+          </Link>
+          <h1 className="text-2xl font-bold">作品管理</h1>
+        </div>
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
@@ -312,7 +321,9 @@ export default function AdminWorks() {
                 
                 <div className="flex gap-2">
                   {work.visibility !== 3 && (
-                    <form method="post" action={`/admin/works/${work.slug}/force-private`}>
+                    <form method="post">
+                      <input type="hidden" name="action" value="force-private" />
+                      <input type="hidden" name="slug" value={work.slug} />
                       <button
                         type="submit"
                         className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-colors"
@@ -323,7 +334,9 @@ export default function AdminWorks() {
                   )}
                   
                   {work.visibility === 3 && (
-                    <form method="post" action={`/admin/works/${work.slug}/restore`}>
+                    <form method="post">
+                      <input type="hidden" name="action" value="restore" />
+                      <input type="hidden" name="slug" value={work.slug} />
                       <button
                         type="submit"
                         className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
