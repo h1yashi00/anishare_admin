@@ -162,3 +162,6 @@ export async function handleLogin(username: string, password: string): Promise<{
 export function handleLogout(): string {
   return clearSessionCookie();
 }
+
+// セッションコンテキストのシンボル
+export const sessionContext = Symbol("session");

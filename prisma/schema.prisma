@@ -139,6 +139,7 @@ model Works {
   timeHour       Int
   timeMinute     Int
   userId         Int
+  visibility     Int             @default(1) // 1: 公開, 2: 非公開, 3: 強制非公開
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   workOriginals  WorkOriginal[]

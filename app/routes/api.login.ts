@@ -7,7 +7,12 @@ export async function action({ request }: Route.ActionArgs) {
     const contentType = request.headers.get('content-type') || '';
     let username: string, password: string;
 
-    if (contentType.includes('application/x-www-form-urlencoded')) {
+    if (contentType.includes('application/json')) {
+      // JSONデータを処理
+      const body = await request.json();
+      username = body.username || '';
+      password = body.password || '';
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
       // URLエンコードされたデータを処理
       const body = await request.text();
       const params = new URLSearchParams(body);
