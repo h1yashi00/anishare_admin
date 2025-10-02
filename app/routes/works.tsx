@@ -3,6 +3,7 @@ import { useLoaderData } from "react-router";
 import { getWorks } from "~/query/query";
 import { useState } from "react";
 import { FaHeart, FaBookmark, FaComment, FaCog, FaEye, FaTags, FaImage } from "react-icons/fa";
+import { getS3Url } from "~/s3_client";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -257,7 +258,7 @@ export default function Works() {
                           {work.workMedia.length > 0 ? (
                             <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                               <img
-                                src={`https://${work.workMedia[0].media.bucketName}.s3.amazonaws.com/${work.workMedia[0].media.key}`}
+                                src={getS3Url(work.workMedia[0].media.key)}
                                 alt={work.title}
                                 className="w-full h-full object-cover rounded-lg"
                                 onError={(e) => {

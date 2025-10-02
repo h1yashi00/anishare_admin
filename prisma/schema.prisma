@@ -155,6 +155,7 @@ model Works {
   WorkComment    WorkComment[]
   Report         Report[]
   Notification   Notifications[]
+  eventWorks     EventWork[]
 
   @@unique([slug])
   @@map("works")
@@ -420,4 +421,35 @@ model UploadSetting {
 
   @@unique([userId])
   @@map("upload_settings")
+}
+
+model Event {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(100)
+  description  String   @db.VarChar(1000)
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean  @default(true)
+  tagName      String   @db.VarChar(50) @unique
+  imageUrl     String  @db.VarChar(500)
+  thumbnailUrl String  @db.VarChar(500)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  eventWorks   EventWork[]
+
+  @@map("events")
+}
+
+model EventWork {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  workId    Int
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  work      Works    @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, workId])
+  @@index([eventId])
+  @@index([workId])
+  @@map("event_works")
 }

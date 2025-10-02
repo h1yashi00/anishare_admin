@@ -149,3 +149,29 @@ export async function restoreWork(slug: string) {
     data: { visibility: 1 }
   });
 }
+
+export async function getActiveEvents() {
+  return await prisma.event.findMany({
+    where: {
+      startDate: { lte: new Date() },
+      endDate: { gte: new Date() },
+    },
+  });
+}
+
+export async function getAllEvents() {
+  return await prisma.event.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      eventWorks: {
+        include: {
+          work: {
+            include: {
+              user: true
+            }
+          }
+        }
+      }
+    }
+  });
+}
