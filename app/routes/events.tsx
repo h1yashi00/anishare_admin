@@ -3,6 +3,7 @@ import { useState } from "react";
 import { prisma } from "~/lib/prisma";
 import { getActiveEvents, getAllEvents } from "~/query/query";
 import { upload, deleteFile, getS3Url, extractKeyFromS3Url } from "~/s3_client";
+import TiptapEditor from "~/components/TiptapEditor";
 
 export const meta: MetaFunction = () => {
   return [
@@ -206,6 +207,8 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 export default function AdminEvents() {
   const { allEvents } = useLoaderData<typeof loader>();
   const [editingEvent, setEditingEvent] = useState<number | null>(null);
+  const [newEventDescription, setNewEventDescription] = useState<string>("");
+  const [editingEventDescription, setEditingEventDescription] = useState<string>("");
 
   return (
     <div className="min-h-screen bg-gray-100 pt-20">
@@ -234,12 +237,16 @@ export default function AdminEvents() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 説明
               </label>
-              <textarea
+              <TiptapEditor
+                content={newEventDescription}
+                onChange={setNewEventDescription}
+                placeholder="イベントの説明を入力してください..."
+                editable={true}
+              />
+              <input
+                type="hidden"
                 name="description"
-                required
-                rows={3}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="イベントの説明"
+                value={newEventDescription}
               />
             </div>
 
@@ -356,9 +363,14 @@ export default function AdminEvents() {
                               <h3 className="text-lg font-semibold text-gray-900 mb-1">
                                 {event.title}
                               </h3>
-                              <p className="text-gray-600 text-sm mb-2">
-                                {event.description}
-                              </p>
+                              <div className="text-gray-600 text-sm mb-2">
+                                <TiptapEditor
+                                  content={event.description}
+                                  onChange={() => {}}
+                                  editable={false}
+                                  className="text-sm"
+                                />
+                              </div>
                               {event.tagName && (
                                 <div className="mb-2">
                                   <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
@@ -400,7 +412,10 @@ export default function AdminEvents() {
 
                       <div className="flex justify-end space-x-2">
                         <button
-                          onClick={() => setEditingEvent(event.id)}
+                          onClick={() => {
+                            setEditingEvent(event.id);
+                            setEditingEventDescription(event.description);
+                          }}
                           className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
                         >
                           編集
@@ -457,7 +472,10 @@ export default function AdminEvents() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">イベントを編集</h2>
                 <button
-                  onClick={() => setEditingEvent(null)}
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setEditingEventDescription("");
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   ✕
@@ -491,13 +509,16 @@ export default function AdminEvents() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         説明
                       </label>
-                      <textarea
+                      <TiptapEditor
+                        content={editingEventDescription || event.description}
+                        onChange={setEditingEventDescription}
+                        placeholder="イベントの説明を入力してください..."
+                        editable={true}
+                      />
+                      <input
+                        type="hidden"
                         name="description"
-                        defaultValue={event.description}
-                        required
-                        rows={3}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="イベントの説明"
+                        value={editingEventDescription || event.description}
                       />
                     </div>
 
@@ -610,7 +631,10 @@ export default function AdminEvents() {
                     <div className="flex justify-end space-x-2 pt-4">
                       <button
                         type="button"
-                        onClick={() => setEditingEvent(null)}
+                        onClick={() => {
+                          setEditingEvent(null);
+                          setEditingEventDescription("");
+                        }}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
                       >
                         キャンセル
